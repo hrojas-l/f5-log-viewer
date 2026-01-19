@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>F5 XC - Consulta de Logs</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
     body {
       background-color: #f5f8fa;
@@ -48,6 +49,17 @@
       border: none;
       border-radius: 10px;
     }
+    .btn-elk {
+      background: linear-gradient(90deg, #f0b429, #f9c846);
+      border: none;
+      border-radius: 10px;
+      color: #1a1a1a;
+      font-weight: 600;
+    }
+    .btn-elk:hover {
+      background: linear-gradient(90deg, #e0a419, #e9b836);
+      color: #1a1a1a;
+    }
     .btn-secondary {
       border-radius: 10px;
     }
@@ -72,30 +84,263 @@
       background-color: #e9ecef;
       cursor: not-allowed;
     }
+    .elk-status {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .elk-status.connected {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .elk-status.disconnected {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .elk-status.checking {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-dot.green { background-color: #28a745; }
+    .status-dot.red { background-color: #dc3545; }
+    .status-dot.yellow { background-color: #ffc107; }
+    .config-section {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .config-section h6 {
+      color: #0077b6;
+      margin-bottom: 10px;
+    }
+    
+    /* Login Styles */
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+    }
+    .login-header {
+      background: linear-gradient(135deg, #0077b6, #00b4d8);
+      padding: 40px 30px;
+      text-align: center;
+      color: white;
+    }
+    .login-header i {
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+    .login-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .login-header p {
+      opacity: 0.9;
+      margin-bottom: 0;
+      font-size: 0.9rem;
+    }
+    .login-body {
+      padding: 30px;
+      background: white;
+    }
+    .login-body .form-control {
+      border-radius: 10px;
+      padding: 12px 15px;
+      border: 1px solid #dee2e6;
+    }
+    .login-body .form-control:focus {
+      border-color: #0077b6;
+      box-shadow: 0 0 0 0.2rem rgba(0, 119, 182, 0.15);
+    }
+    .login-body .btn-login {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #0077b6, #00b4d8);
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    .login-body .btn-login:hover {
+      background: linear-gradient(90deg, #005f8a, #0096b4);
+    }
+    .login-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-info .user-email {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.9);
+    }
+    .btn-logout {
+      padding: 5px 15px;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
-  <div class="container py-5">
+  
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <i class="bi bi-cloud-download"></i>
+        <h2>F5 XC Log Viewer</h2>
+        <p>Ingresa tus credenciales para continuar</p>
+      </div>
+      <div class="login-body">
+        <div id="loginError" class="login-error">
+          <i class="bi bi-exclamation-circle"></i>
+          <span id="loginErrorMsg">Credenciales incorrectas</span>
+        </div>
+        <form id="loginForm" onsubmit="return handleLogin(event)">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Correo electrónico</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" class="form-control" id="loginEmail" placeholder="correo@ejemplo.com" required />
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Contraseña</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-lock"></i></span>
+              <input type="password" class="form-control" id="loginPassword" placeholder="••••••••" required />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-login">
+            <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP (HIDDEN BY DEFAULT) -->
+  <div id="mainApp" class="container py-5" style="display: none;">
     <div class="card">
       <div class="header">
-        <h1>F5 XC - Consulta de Logs</h1>
-        <p class="mb-0">Extrae y analiza logs de F5 Distributed Cloud</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <div style="width: 150px;"></div>
+          <div class="text-center">
+            <h1><i class="bi bi-cloud-download"></i> F5 XC - Consulta de Logs</h1>
+            <p class="mb-0">Extrae y analiza logs de F5 Distributed Cloud</p>
+          </div>
+          <div class="user-info text-end" style="width: 150px;">
+            <div>
+              <small class="user-email d-block" id="userEmailDisplay"></small>
+              <button class="btn btn-light btn-sm btn-logout mt-1" onclick="handleLogout()">
+                <i class="bi bi-box-arrow-right"></i> Salir
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="card-body">
+        <!-- ELK STATUS BAR -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <span class="fw-semibold">Elasticsearch:</span>
+            <span id="elkStatus" class="elk-status checking ms-2">
+              <span class="status-dot yellow"></span>
+              Verificando...
+            </span>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="mostrarConfigELK()">
+            <i class="bi bi-gear"></i> Configurar ELK
+          </button>
+        </div>
+
+        <!-- ELK CONFIG SECTION (HIDDEN BY DEFAULT) -->
+        <div id="elkConfigSection" class="config-section" style="display: none;">
+          <h6>Configuración de Elasticsearch</h6>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label small">URL Elasticsearch</label>
+              <input type="text" class="form-control form-control-sm" id="elkUrl" value="http://192.168.0.200:9200" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Método de Autenticación</label>
+              <select class="form-select form-select-sm" id="elkAuthMethod" onchange="toggleAuthFields()">
+                <option value="api_key" selected>API Key (Recomendado)</option>
+                <option value="basic">Usuario / Contraseña</option>
+              </select>
+            </div>
+            
+            <!-- API Key Field -->
+            <div class="col-12" id="apiKeyField">
+              <label class="form-label small">API Key</label>
+              <input type="password" class="form-control form-control-sm" id="elkApiKey" placeholder="API Key" />
+            </div>
+            
+            <!-- Basic Auth Fields (hidden by default) -->
+            <div class="col-md-6" id="basicAuthUser" style="display: none;">
+              <label class="form-label small">Usuario</label>
+              <input type="text" class="form-control form-control-sm" id="elkUsername" placeholder="elastic" />
+            </div>
+            <div class="col-md-6" id="basicAuthPass" style="display: none;">
+              <label class="form-label small">Contraseña</label>
+              <input type="password" class="form-control form-control-sm" id="elkPassword" placeholder="••••••••" />
+            </div>
+            
+            <div class="col-12 mt-2">
+              <button type="button" class="btn btn-sm btn-primary me-2" onclick="guardarConfigELK()">
+                 Guardar
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="testConexionELK()">
+                 Probar Conexión
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="ocultarConfigELK()">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+
         <form id="logForm" class="row g-3">
           <!-- TENANT -->
           <div class="col-md-4">
             <label class="form-label fw-semibold">Tenant</label>
-            <input 
-              type="text" 
-              class="form-control" 
-              id="tenant" 
-              placeholder="credibanco" 
-              required 
-              onblur="cargarNamespaces()"
-            />
-            <small class="text-muted">Presiona Tab o clic fuera para cargar namespaces</small>
+            <select
+              class="form-control"
+              id="tenant"
+              required
+              onchange="cargarNamespaces()"
+            >
+              <option value="" disabled selected>Selecciona un tenant</option>
+              <option value="credibanco">credibanco</option>
+              <option value="compensar">compensar</option>
+            </select>
           </div>
 
           <!-- NAMESPACE -->
@@ -154,12 +399,11 @@
             </select>
           </div>
 
-          <!-- FORMATO -->
+          <!-- ÍNDICE ELK (INFO) -->
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Formato de Salida</label>
-            <select id="format" class="form-select">
-              <option value="csv">CSV</option>
-            </select>
+            <label class="form-label fw-semibold">Índice Elasticsearch</label>
+            <input type="text" class="form-control" id="elkIndex" readonly value="f5xc-access-logs" />
+            <small class="text-muted">Se actualiza según el tipo de log seleccionado</small>
           </div>
 
           <!-- BOTONES -->
@@ -167,17 +411,26 @@
             <button type="button" class="btn btn-primary px-4 me-2" onclick="consultarLogs()">
                Descargar CSV
             </button>
-            <button type="button" class="btn btn-success px-4 me-2" onclick="enviarAElastic()">
-               Enviar a Elastic
+            <button type="button" class="btn btn-elk px-4 me-2" onclick="enviarAElastic()">
+               Enviar a Elasticsearch
+            </button>
+            <button type="button" class="btn btn-warning px-4 me-2" id="btnDiagnostico" onclick="diagnosticarLB()" disabled>
+               Diagnosticar
             </button>
             <button type="reset" class="btn btn-secondary px-4" onclick="limpiarFormulario()">
-              Limpiar Formulario
+               Limpiar
             </button>
           </div>
         </form>
 
-        <div id="resultado" class="mt-4 text-center"></div>
+        <!-- RESULTADO -->
+        <div id="resultado" class="mt-4"></div>
       </div>
+    </div>
+
+    <!-- FOOTER INFO -->
+    <div class="text-center mt-3 text-muted small">
+      <p class="mb-0">F5 XC Log Viewer v2.0</p>
     </div>
   </div>
 
